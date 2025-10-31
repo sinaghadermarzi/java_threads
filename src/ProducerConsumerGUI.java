@@ -3,64 +3,99 @@ import java.awt.*;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ProducerConsumerGUI
  *
- * This program demonstrates:
- * - A bounded buffer shared between a Producer thread and a Consumer thread.
- * - Proper synchronization with wait()/notifyAll().
- * - A Swing GUI that live-updates to show buffer state.
+ * Updated version:
+ * - No automatic producer/consumer threads.
+ * - User clicks buttons to produce or consume N items.
+ * - Buffer state is shown at the bottom.
  *
- * The buffer holds integers. The producer keeps generating numbers.
- * The consumer keeps removing them.
+ * This still uses proper monitor-style synchronization on the bounded buffer
+ * (wait/notifyAll), but now production/consumption is triggered by UI events.
  */
 public class ProducerConsumerGUI extends JFrame {
 
-    // --- GUI components ---
+    // GUI components
     private final JLabel bufferLabel;
-    private final JLabel lastProducedLabel;
-    private final JLabel lastConsumedLabel;
+    private final JButton produce1Btn;
+    private final JButton produce2Btn;
+    private final JButton produce3Btn;
+    private final JButton consume1Btn;
+    private final JButton consume2Btn;
+    private final JButton consume3Btn;
 
-    // Shared state that GUI will display
+    // shared bounded buffer
     private final BoundedBuffer<Integer> buffer;
-    private volatile Integer lastProduced = null;
-    private volatile Integer lastConsumed = null;
+
+    private final Random rand = new Random();
 
     public ProducerConsumerGUI() {
-        super("Producer / Consumer Demo");
+        super("Producer / Consumer Demo (Manual Mode)");
 
-        // buffer of size 5
         this.buffer = new BoundedBuffer<>(5);
 
-        // GUI labels
-        bufferLabel = new JLabel("Buffer: []");
-        lastProducedLabel = new JLabel("Last produced: -");
-        lastConsumedLabel = new JLabel("Last consumed: -");
+        // LEFT PANEL: Produce buttons
+        produce1Btn = new JButton("Produce-1");
+        produce2Btn = new JButton("Produce-2");
+        produce3Btn = new JButton("Produce-3");
 
-        // layout the UI
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(3, 1, 8, 8));
-        panel.setBorder(BorderFactory.createEmptyBorder(16,16,16,16));
-        panel.add(bufferLabel);
-        panel.add(lastProducedLabel);
-        panel.add(lastConsumedLabel);
+        JPanel leftPanel = new JPanel();
+        leftPanel.setLayout(new GridLayout(3, 1, 8, 8));
+        leftPanel.add(produce1Btn);
+        leftPanel.add(produce2Btn);
+        leftPanel.add(produce3Btn);
+
+        // RIGHT PANEL: Consume buttons
+        consume1Btn = new JButton("Consume-1");
+        consume2Btn = new JButton("Consume-2");
+        consume3Btn = new JButton("Consume-3");
+
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new GridLayout(3, 1, 8, 8));
+        rightPanel.add(consume1Btn);
+        rightPanel.add(consume2Btn);
+        rightPanel.add(consume3Btn);
+
+        // CENTER PANEL: just a spacer / visual gap for now
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new GridBagLayout());
+        JLabel title = new JLabel("Manual Producer / Consumer");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
+        centerPanel.add(title);
+
+        // BOTTOM: buffer label
+        bufferLabel = new JLabel("Buffer: []");
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(8,16,8,16));
+        bottomPanel.add(bufferLabel);
+
+        // MAIN LAYOUT
+        JPanel mainPanel = new JPanel(new BorderLayout(16,16));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(16,16,16,16));
+        mainPanel.add(leftPanel, BorderLayout.WEST);
+        mainPanel.add(rightPanel, BorderLayout.EAST);
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setContentPane(panel);
-        this.setSize(400, 200);
+        this.setContentPane(mainPanel);
+        this.setSize(500, 250);
         this.setLocationRelativeTo(null);
 
-        // start background threads AFTER UI is up
-        startThreads();
-        // start a Swing timer to refresh the GUI ~10x/sec
+        // hook up button logic
+        wireButtonActions();
+
+        // refresh timer (keeps buffer label in sync ~10x/sec)
         startGuiRefreshTimer();
     }
 
     /**
-     * BoundedBuffer<T> is a classic monitor:
-     * - put() waits if buffer is full
-     * - take() waits if buffer is empty
+     * Classic bounded buffer with wait/notifyAll.
+     * Capacity is fixed.
      */
     private static class BoundedBuffer<T> {
         private final Queue<T> queue = new LinkedList<>();
@@ -72,24 +107,39 @@ public class ProducerConsumerGUI extends JFrame {
 
         public synchronized void put(T item) throws InterruptedException {
             while (queue.size() == capacity) {
-                wait(); // wait for space
+                wait();
             }
             queue.add(item);
-            notifyAll(); // wake any waiting consumer
+            notifyAll();
         }
 
         public synchronized T take() throws InterruptedException {
             while (queue.isEmpty()) {
-                wait(); // wait for data
+                wait();
             }
             T item = queue.remove();
-            notifyAll(); // wake any waiting producer
+            notifyAll();
             return item;
         }
 
-        public synchronized java.util.List<T> snapshot() {
-            // return a shallow copy for display
-            return new java.util.ArrayList<>(queue);
+        // helper: try to take up to n items
+        public List<T> takeMany(int n) throws InterruptedException {
+            List<T> result = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                result.add(take());
+            }
+            return result;
+        }
+
+        // helper: put n items
+        public void putMany(List<T> items) throws InterruptedException {
+            for (T item : items) {
+                put(item);
+            }
+        }
+
+        public synchronized List<T> snapshot() {
+            return new ArrayList<>(queue);
         }
 
         public synchronized int size() {
@@ -97,91 +147,79 @@ public class ProducerConsumerGUI extends JFrame {
         }
     }
 
-    // Thread that keeps producing integers
-    private class Producer implements Runnable {
-        private final Random rand = new Random();
-        private int counter = 0;
-
-        @Override
-        public void run() {
-            try {
-                while (true) {
-                    // create a new "item"
-                    int item = counter++;
-                    // pretend work: random sleep
-                    Thread.sleep(200 + rand.nextInt(400));
-
-                    // put item into the buffer
-                    buffer.put(item);
-
-                    // remember last produced for GUI
-                    lastProduced = item;
-                }
-            } catch (InterruptedException e) {
-                // thread ending
-            }
-        }
-    }
-
-    // Thread that keeps consuming integers
-    private class Consumer implements Runnable {
-        private final Random rand = new Random();
-
-        @Override
-        public void run() {
-            try {
-                while (true) {
-                    // pretend work: random sleep
-                    Thread.sleep(300 + rand.nextInt(500));
-
-                    // take item from buffer
-                    Integer item = buffer.take();
-
-                    // remember last consumed for GUI
-                    lastConsumed = item;
-                }
-            } catch (InterruptedException e) {
-                // thread ending
-            }
-        }
-    }
-
     /**
-     * Launch producer and consumer threads.
+     * Helper to generate N random integers.
      */
-    private void startThreads() {
-        Thread producerThread = new Thread(new Producer(), "ProducerThread");
-        Thread consumerThread = new Thread(new Consumer(), "ConsumerThread");
-
-        // mark them as daemons so program exits when window closes
-        producerThread.setDaemon(true);
-        consumerThread.setDaemon(true);
-
-        producerThread.start();
-        consumerThread.start();
+    private List<Integer> generateItems(int n) {
+        List<Integer> items = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            items.add(rand.nextInt(1000)); // random 0..999
+        }
+        return items;
     }
 
     /**
-     * Swing Timer: pull the latest state from shared fields
-     * and reflect it in the labels.
+     * Attach listeners to buttons.
      *
-     * We do NOT touch Swing components from worker threads directly.
-     * Instead, we cache state in lastProduced/lastConsumed and snapshot()
-     * the buffer here in the EDT (Event Dispatch Thread).
+     * IMPORTANT:
+     * We do the buffer work in background worker threads, not on the Swing
+     * event dispatch thread, because put()/take() can block (wait()).
+     * If we blocked the EDT, the UI would freeze.
+     */
+    private void wireButtonActions() {
+
+        produce1Btn.addActionListener(e -> spawnWorkerProduce(1));
+        produce2Btn.addActionListener(e -> spawnWorkerProduce(2));
+        produce3Btn.addActionListener(e -> spawnWorkerProduce(3));
+
+        consume1Btn.addActionListener(e -> spawnWorkerConsume(1));
+        consume2Btn.addActionListener(e -> spawnWorkerConsume(2));
+        consume3Btn.addActionListener(e -> spawnWorkerConsume(3));
+    }
+
+    /**
+     * Run a short-lived background thread that produces N items.
+     */
+    private void spawnWorkerProduce(int n) {
+        new Thread(() -> {
+            try {
+                List<Integer> items = generateItems(n);
+                buffer.putMany(items);
+                // you could log to console for debugging:
+                System.out.println("Produced: " + items);
+            } catch (InterruptedException ex) {
+                // ignore for demo
+            }
+        }, "Produce-"+n).start();
+    }
+
+    /**
+     * Run a short-lived background thread that consumes N items.
+     */
+    private void spawnWorkerConsume(int n) {
+        new Thread(() -> {
+            try {
+                List<Integer> taken = buffer.takeMany(n);
+                System.out.println("Consumed: " + taken);
+            } catch (InterruptedException ex) {
+                // ignore for demo
+            }
+        }, "Consume-"+n).start();
+    }
+
+    /**
+     * Swing timer refresh: update bufferLabel to show current contents.
+     * This runs on the EDT and reads snapshot() from the buffer.
      */
     private void startGuiRefreshTimer() {
         Timer timer = new Timer(100, e -> {
-            // safely snapshot buffer state for display
-            java.util.List<Integer> snapshot = buffer.snapshot();
-            bufferLabel.setText("Buffer (" + snapshot.size() + "): " + snapshot);
-            lastProducedLabel.setText("Last produced: " + (lastProduced == null ? "-" : lastProduced));
-            lastConsumedLabel.setText("Last consumed: " + (lastConsumed == null ? "-" : lastConsumed));
+            List<Integer> snap = buffer.snapshot();
+            bufferLabel.setText("Buffer (" + snap.size() + "): " + snap);
         });
         timer.start();
     }
 
     public static void main(String[] args) {
-        // All Swing UI creation should happen on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
             ProducerConsumerGUI app = new ProducerConsumerGUI();
             app.setVisible(true);

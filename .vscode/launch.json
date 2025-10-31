@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "type": "java",
+            "name": "Debug ProducerConsumerGUI",
+            "request": "launch",
+            "mainClass": "ProducerConsumerGUI",
+            "projectName": "java_threads"
+        },
+        {
+            "type": "java",
+            "name": "Run ProducerConsumerGUI",
+            "request": "launch",
+            "mainClass": "ProducerConsumerGUI",
+            "projectName": "java_threads"
+        }
+    ]
+}

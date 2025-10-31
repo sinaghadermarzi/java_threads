@@ -8,7 +8,8 @@
             "request": "launch",
             "mainClass": "ProducerConsumerGUI",
             "classPaths": ["${workspaceFolder}/target/classes"],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "compile"
         },
         {
             "type": "java",
@@ -16,7 +17,8 @@
             "request": "launch",
             "mainClass": "ProducerConsumerGUI",
             "classPaths": ["${workspaceFolder}/target/classes"],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "compile"
         }
     ]
 }

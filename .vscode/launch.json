@@ -7,14 +7,16 @@
             "name": "Debug ProducerConsumerGUI",
             "request": "launch",
             "mainClass": "ProducerConsumerGUI",
-            "projectName": "java_threads"
+            "classPaths": ["${workspaceFolder}/target/classes"],
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "java",
             "name": "Run ProducerConsumerGUI",
             "request": "launch",
             "mainClass": "ProducerConsumerGUI",
-            "projectName": "java_threads"
+            "classPaths": ["${workspaceFolder}/target/classes"],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

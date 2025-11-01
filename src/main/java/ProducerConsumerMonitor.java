@@ -17,7 +17,7 @@ import java.util.List;
  * This still uses proper monitor-style synchronization on the bounded buffer
  * (wait/notifyAll), but now production/consumption is triggered by UI events.
  */
-public class ProducerConsumerGUI extends JFrame {
+public class ProducerConsumerMonitor extends JFrame {
 
     // GUI components
     private final JLabel bufferLabel;
@@ -33,7 +33,7 @@ public class ProducerConsumerGUI extends JFrame {
 
     private final Random rand = new Random();
 
-    public ProducerConsumerGUI() {
+    public ProducerConsumerMonitor() {
         super("Producer / Consumer Demo (Manual Mode)");
 
         this.buffer = new BoundedBuffer<>(5);
@@ -221,7 +221,7 @@ public class ProducerConsumerGUI extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            ProducerConsumerGUI app = new ProducerConsumerGUI();
+            ProducerConsumerMonitor app = new ProducerConsumerMonitor();
             app.setVisible(true);
         });
     }

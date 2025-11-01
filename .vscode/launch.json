@@ -4,18 +4,36 @@
 
         {
             "type": "java",
-            "name": "Debug ProducerConsumerGUI",
+            "name": "Debug ProducerConsumerMonitor",
             "request": "launch",
-            "mainClass": "ProducerConsumerGUI",
+            "mainClass": "ProducerConsumerMonitor",
             "classPaths": ["${workspaceFolder}/target/classes"],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "compile"
         },
         {
             "type": "java",
-            "name": "Run ProducerConsumerGUI",
+            "name": "Run ProducerConsumerMonitor",
             "request": "launch",
-            "mainClass": "ProducerConsumerGUI",
+            "mainClass": "ProducerConsumerMonitor",
+            "classPaths": ["${workspaceFolder}/target/classes"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "compile"
+        },
+        {
+            "type": "java",
+            "name": "Debug ProducerConsumerSemaphore",
+            "request": "launch",
+            "mainClass": "ProducerConsumerSemaphore",
+            "classPaths": ["${workspaceFolder}/target/classes"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "compile"
+        },
+        {
+            "type": "java",
+            "name": "Run ProducerConsumerSemaphore",
+            "request": "launch",
+            "mainClass": "ProducerConsumerSemaphore",
             "classPaths": ["${workspaceFolder}/target/classes"],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "compile"

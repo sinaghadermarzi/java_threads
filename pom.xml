@@ -37,10 +37,28 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>ProducerConsumerGUI</mainClass>
+                    <mainClass>${exec.mainClass}</mainClass>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>producer-consumer</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <exec.mainClass>ProducerConsumerGUI</exec.mainClass>
+            </properties>
+        </profile>
+        <profile>
+            <id>hello-world</id>
+            <properties>
+                <exec.mainClass>HelloWorld</exec.mainClass>
+            </properties>
+        </profile>
+    </profiles>
     
 </project>
